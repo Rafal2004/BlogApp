@@ -7,6 +7,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,9 @@ import java.util.Optional;
 public class UserController {
     private UserRepository userRepository;
     private PostRepository postRepository;
+
+    private RoleRepository roleRepository;
+
     private UserService userService;
 
     private CustomUserDetailsService customUserDetailsService;
@@ -34,16 +38,20 @@ public class UserController {
         return user;
     }
 
-    public UserController(UserRepository userRepository, PostRepository postRepository, CustomUserDetailsService customUserDetailsService) {
+    public UserController(UserRepository userRepository, PostRepository postRepository
+            , CustomUserDetailsService customUserDetailsService, RoleRepository roleRepository, UserService userService) {
         super();
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.customUserDetailsService=customUserDetailsService;
+        this.roleRepository = roleRepository;
+        this.userService = userService;
     }
 
     @GetMapping("/settings")
     public String showUserDetails(ModelMap model){
         Optional<User> userOptional = userRepository.findById(getCurrentUser().getId());
+
         if(userOptional.isPresent()){
             User user = userOptional.get();
             model.addAttribute("user",user);
@@ -54,10 +62,10 @@ public class UserController {
 
     @GetMapping("/edit")
     public String showEditUser(ModelMap model){
-        Optional<User> userOptional = userRepository.findById((long) getCurrentUser().getId());
+        Optional<User> userOptional = userRepository.findById(getCurrentUser().getId());
         if(userOptional.isPresent()){
             User user = userOptional.get();
-            System.out.println(user.toString());
+//            System.out.println(user.toString());
             model.addAttribute("user",user);
             return "editUser";
         }
@@ -88,17 +96,18 @@ public class UserController {
 
 }
 
-    @GetMapping("/my-page")
+    @GetMapping("/saved-posts")
     public String showUserPage(ModelMap model){
-            List<Post> posts = postRepository.findByUserId(getCurrentUser().getId());
-            model.addAttribute("posts", posts);
+
             User user = getCurrentUser();
+        List<Post> posts = userService.getSavedPosts(user);
+        model.addAttribute("posts", posts);
 
-
-            model.addAttribute("user", user);
+        model.addAttribute("user", user);
 
             return "userPage";
         }
+
 
 
     @GetMapping("/change-password")
@@ -125,9 +134,96 @@ public class UserController {
         // Redirect to a success page or display a success message
         return "redirect:/user/change-password?success";
     }
+    @PostMapping("/add-role")
+    public String addRole(@RequestParam("roleId") String strRoleId, @RequestParam("userId") String strUserId){
 
+        long roleId = Long.parseLong(strRoleId);
+        long userId = Long.parseLong(strUserId);
+        Optional<Role> roleOptional = roleRepository.findById(roleId);
+        Optional<User> userOptional = userRepository.findById(userId);
+
+        if(userOptional.isPresent() && roleOptional.isPresent()) {
+            User user = userOptional.get();
+            Role role = roleOptional.get();
+
+            //Checking whether the moderator wants to give someone admin. ONLY ADMIN SHOULD ADD ANOTHER ADMIN
+            if(role.getName().equals("ROLE_ADMIN")){
+                for(Role roleCurrentUser : getCurrentUser().getRoles()){
+                    if(roleCurrentUser.getName().equals("ROLE_ADMIN")){
+                        user.addRole(role);
+                        userRepository.save(user);
+                        return "redirect:/user/all";
+                    }
+                }
+                return "error";
+            }
+            user.addRole(role);
+            userRepository.save(user);
+            return "redirect:/user/all";
+        }
+        else return "error";
+        }
+    @PostMapping("/delete-role")
+    public String deleteRole(@RequestParam("roleId") String strRoleId, @RequestParam("userId") String strUserId){
+
+        long roleId = Long.parseLong(strRoleId);
+        long userId = Long.parseLong(strUserId);
+        Optional<Role> roleOptional = roleRepository.findById(roleId);
+        Optional<User> userOptional = userRepository.findById(userId);
+
+
+        //Checking whether the moderator wants to delete admin. ONLY ADMIN SHOULD DELETE OTHER ADMIN
+        if(userOptional.isPresent() && roleOptional.isPresent()) {
+            User user = userOptional.get();
+            Role role = roleOptional.get();
+            if(role.getName().equals("ROLE_ADMIN")){
+                for(Role roleCurrentUser : getCurrentUser().getRoles()){
+                    if(roleCurrentUser.getName().equals("ROLE_ADMIN")){
+                        user.removeRole(role);
+                        userRepository.save(user);
+                        return "redirect:/user/all";
+                    }
+                }
+                return "error";
+            }
+            user.removeRole(role);
+            userRepository.save(user);
+            return "redirect:/user/all";
+        }
+        else return "error";
+    }
+
+
+    @PostMapping("/delete-user")
+    public String deleteUser(@RequestParam("userId") String strUserId){
+        long id = Long.parseLong(strUserId);
+
+        Role role = roleRepository.findByName("ROLE_ADMIN");
+        Optional<User> userOptional = userRepository.findById(id);
+        if(userOptional.isPresent()){
+            User user = userOptional.get();
+            if(!getCurrentUser().getRoles().contains(role)){
+                System.out.println("SDADSA");
+                if(user.getRoles().contains(role)){
+                    return "error";
+                }}
+            userRepository.delete(user);
+            return "redirect:/user/all";
+        }
+        return "error";
 
     }
+
+    @GetMapping("/all")
+    public String all_users(Model model) {
+        List<User> users = userRepository.findAll();
+        model.addAttribute("users", users);
+        model.addAttribute("currentUser", getCurrentUser());
+        return "users";
+    }
+
+
+}
 
 
 

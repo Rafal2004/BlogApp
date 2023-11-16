@@ -1,9 +1,10 @@
 package com.learningBlog.blog.AuthController;
 
 import com.learningBlog.blog.User.User;
-import jakarta.validation.Valid;
-import com.learningBlog.blog.User.UserDto;
+import com.learningBlog.blog.User.UserRepository;
 import com.learningBlog.blog.User.UserService;
+import jakarta.validation.Valid;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -11,14 +12,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import java.util.List;
 
 @Controller
 public class AuthController {
 
+    private UserRepository userRepository;
+    private PasswordEncoder passwordEncoder;
     private UserService userService;
-
-    public AuthController(UserService userService) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, UserService userService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
         this.userService = userService;
     }
 
@@ -30,19 +33,17 @@ public class AuthController {
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
-        UserDto user = new UserDto();
+        User user = new User();
         model.addAttribute("user", user);
         return "register";
     }
 
 
     @PostMapping("register/save")
-    public String registration(@Valid @ModelAttribute("user") UserDto userDto,
+    public String registration(@Valid @ModelAttribute("user") User tempUser,
                                BindingResult result,
-
                                Model model) {
-        User existingUser = userService.findUserByEmail(userDto.getEmail());
-
+        User existingUser = userRepository.findUserByEmail(tempUser.getEmail());
 
         if (existingUser != null && existingUser.getEmail() != null) {
             result.rejectValue("email", null,
@@ -50,20 +51,15 @@ public class AuthController {
         }
         if (result.hasErrors()) {
             System.out.println(result.toString());
-            model.addAttribute("user", userDto);
+            model.addAttribute("user", tempUser);
             return "register";
         }
+        User user = userService.hashPasswordAndSetRole(tempUser);
 
-        userService.saveUser(userDto);
+        userRepository.save(user);
         return "redirect:/register?success";
-
     }
 
-    @GetMapping("/users")
-    public String users(Model model) {
-        List<UserDto> users = userService.findAllUsers();
-        model.addAttribute("users", users);
-        return "users";
-    }
+
 
 }

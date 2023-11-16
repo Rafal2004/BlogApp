@@ -1,62 +1,98 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <div th:replace="~{header :: head}">Header</div>
 <body>
 <div th:replace="~{header :: nav}">nav</div>
 <div class="container">
-  <h1>Post Details</h1>
-  <div class="card">
-    <div class="card-body">
-      <h2 class="card-title" th:text="${post.title}"></h2>
-      <p class="card-text" th:text="${post.description}"></p>
-      <p class="card-text">
-        Date: <span th:text="${#temporals.format(post.localDateTime, 'yyyy-MM-dd HH:mm')}"></span>
-      </p>
-      <p class="card-text">
-        User: <span th:text="${post.user.name}"></span>
+    <h1>Post Details</h1>
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title" th:text="${post.title}"></h2>
+            <p class="card-text" th:text="${post.description}"></p>
+            <p class="card-text">
+                Date: <span th:text="${#temporals.format(post.localDateTime, 'yyyy-MM-dd HH:mm')}"></span>
+            </p>
+            <p class="card-text">
+                User: <span th:text="${post.user.name}"></span>
+            </p>
 
-      </p>
-    </div>
-    <div class="card-footer" th:if="${post.user.id}==${currentUser.id}" >
-      <a class="btn btn-primary" th:href="@{/update-post/{postId}(postId=${post.id})}">Edit</a>
-      <a class="btn btn-danger" th:href="@{/delete-post/{postId}(postId=${post.id})}"
-         onclick="return confirm('Are you sure?')">Delete</a>
-    </div>
-  </div>
-  <div class="card mt-5">
-    <div class="card-body">
-      <h3 class="card-title">Add Comment</h3>
-      <form th:action="@{/add-comment/{postId}(postId=${post.id})}" method="post">
-        <div class="form-group">
-          <label for="commentContent">Comment</label>
-          <textarea class="form-control" id="commentContent" name="content" rows="3"></textarea>
+
+            <th:block th:with="isSaved=${#sets.contains(currentUser.savedPosts.![id], post.id)}">
+                <form method="post" role="form" th:action="@{/delete-saved-post}" class="float-end" th:if="${isSaved}">
+                    <input type="hidden" name="userId" th:value="${post.user.name}">
+                    <input type="hidden" name="postId" th:value="${postId}">
+                    <button type="submit" class="btn btn-warning">Delete from saved post</button>
+
+                </form>
+
+                <form method="post" role="form" th:action="@{/save-post}" class="float-end" th:unless="${isSaved}">
+                    <input type="hidden" name="userId" th:value="${post.user.name}">
+                    <input type="hidden" name="postId" th:value="${postId}">
+
+                    <button type="submit" class="btn btn-primary">Save post</button>
+                </form>
+            </th:block>
         </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
-      </form>
+
+        <div class="card-footer" sec:authorize="hasAnyRole('ROLE_MODERATOR', 'ROLE_ADMIN')">
+            <a class="btn btn-danger" th:href="@{/delete-post/{postId}(postId=${post.id})}"
+               onclick="return confirm('Are you sure?')">Delete</a>
+        </div>
+
+
+        <div class="card-footer" th:if="${post.user.id}==${currentUser.id}">
+
+
+            <a class="btn btn-primary" th:href="@{/update-post/{postId}(postId=${post.id})}">Edit</a>
+            <div sec:authorize="!hasAnyRole('ROLE_MODERATOR', 'ROLE_ADMIN')">
+                <a class="btn btn-danger" th:href="@{/delete-post/{postId}(postId=${post.id})}"
+                   onclick="return confirm('Are you sure?')">Delete</a>
+            </div>
+        </div>
+
+
     </div>
-</div>
-
-  <div class="mt-5">
-    <h3>Comments</h3>
-    <div th:each="comment : ${comments}" class="card">
-      <div class="card-body">
-        <p th:text="${comment.content}"></p>
-        <p>Date: <span th:text="${#temporals.format(comment.localDateTime, 'yyyy-MM-dd HH:mm')}"></span></p>
-        <p>User: <span th:text="${comment.user.name}"></span></p>
-      </div>
-
-      <!-- Przyciski do edycji i usuwania komentarza -->
-
-        <div class="card-footer" th:if="${comment.user.id}==${currentUser.id}" >
-        <a th:href="@{/delete-comment/{commentId}(commentId=${comment.id})}"
-           onclick="return confirm('Are you sure?')" class="btn btn-danger">Delete</a>
-
-      </div>
+    <div class="card mt-5">
+        <div class="card-body">
+            <h3 class="card-title">Add Comment</h3>
+            <form th:action="@{/add-comment/{postId}(postId=${post.id})}" method="post">
+                <div class="form-group">
+                    <label for="commentContent">Comment</label>
+                    <textarea class="form-control" id="commentContent" name="content" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
     </div>
-  </div>
+
+    <div class="mt-5">
+        <h3>Comments</h3>
+        <div th:each="comment : ${comments}" class="card">
+            <div class="card-body">
+                <p th:text="${comment.content}"></p>
+                <p>Date: <span th:text="${#temporals.format(comment.localDateTime, 'yyyy-MM-dd HH:mm')}"></span></p>
+                <p>User: <span th:text="${comment.user.name}"></span></p>
+            </div>
+
+            <!-- Przyciski do edycji i usuwania komentarza -->
+
+            <div class="card-footer" th:if="${comment.user.id}==${currentUser.id}">
+                <div sec:authorize="!hasAnyRole('ROLE_MODERATOR', 'ROLE_ADMIN')">
+                <a th:href="@{/delete-comment/{commentId}(commentId=${comment.id})}"
+                   onclick="return confirm('Are you sure?')" class="btn btn-danger">Delete</a>
+                </div>
+            </div>
+            <div class="card-footer" sec:authorize="hasAnyRole('ROLE_MODERATOR', 'ROLE_ADMIN')">
+                <a th:href="@{/delete-comment/{commentId}(commentId=${comment.id})}"
+                   onclick="return confirm('Are you sure?')" class="btn btn-danger">Delete</a>
+            </div>
+
+
+        </div>
+    </div>
 </div>
 <!-- Include Bootstrap JS and jQuery via CDN -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

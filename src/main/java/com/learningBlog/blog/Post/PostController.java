@@ -1,5 +1,7 @@
 package com.learningBlog.blog.Post;
 
+import com.learningBlog.blog.User.Role;
+import com.learningBlog.blog.User.RoleRepository;
 import com.learningBlog.blog.User.User;
 import com.learningBlog.blog.User.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -17,12 +19,13 @@ public class PostController {
     private final UserRepository userRepository;
     private PostRepository postRepository;
     private CommentRepository commentRepository;
+    private RoleRepository roleRepository;
 
-    public PostController(PostRepository postRepository, UserRepository userRepository, CommentRepository commentRepository) {
-        super();
+    public PostController(PostRepository postRepository, UserRepository userRepository, CommentRepository commentRepository, RoleRepository roleRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.roleRepository = roleRepository;
     }
 
 
@@ -44,6 +47,36 @@ public class PostController {
         return "addPost";
     }
 
+    @PostMapping("/save-post")
+    public String savePost(@RequestParam("postId") String strPostId){
+        long postId = Long.parseLong(strPostId);
+        Optional<Post> postOptional = postRepository.findById(postId);
+        User user = getCurrentUser();
+        if(user != null && postOptional.isPresent()) {
+            Post post = postOptional.get();
+            user.addSavedPost(post);
+            userRepository.save(user);
+            return "redirect:/show-post/"+postId;
+        }
+        else return "error";
+    }
+    @PostMapping("/delete-saved-post")
+    public String deleteSavedPost(@RequestParam("postId") String strPostId){
+        long postId = Long.parseLong(strPostId);
+        Optional<Post> postOptional = postRepository.findById(postId);
+        User user = getCurrentUser();
+        if(user != null && postOptional.isPresent()) {
+            Post post = postOptional.get();
+            user.removeSavedPost(post);
+            userRepository.save(user);
+            return "redirect:/show-post/"+postId;
+        }
+        else return "error";
+    }
+
+
+
+
 
     @PostMapping("/add-post")
     public String addPost(ModelMap model, @RequestParam String title, @RequestParam String description) {
@@ -57,7 +90,7 @@ public class PostController {
 
     @GetMapping("/show-post/{postId}")
     public String showPost(@PathVariable long postId, ModelMap model) {
-        Optional<Post> postOptional = postRepository.findById((int) postId);
+        Optional<Post> postOptional = postRepository.findById(postId);
 
         if (postOptional.isPresent()) {
             Post post = postOptional.get();
@@ -75,10 +108,13 @@ public class PostController {
 
     @GetMapping("/delete-post/{postId}")
     public String deletePost(@PathVariable long postId, ModelMap model) {
-        Optional<Post> postOptional = postRepository.findById((int) postId);
+        Optional<Post> postOptional = postRepository.findById(postId);
         if (postOptional.isPresent()) {
             Post post = postOptional.get();
             if (post.getUser().getId() == getCurrentUser().getId()) {
+                postRepository.delete(post);
+                return "redirect:/";
+            }else if(roleRepository.findByName("ROLE_MODERATOR").getUsers().contains(getCurrentUser())||roleRepository.findByName("ROLE_ADMIN").getUsers().contains(getCurrentUser())){
                 postRepository.delete(post);
                 return "redirect:/";
             }
@@ -89,7 +125,7 @@ public class PostController {
 
     @GetMapping("/update-post/{postId}")
     public String showUpdatePost(ModelMap model, @PathVariable long postId) {
-        Optional<Post> postOptional = postRepository.findById((int) postId);
+        Optional<Post> postOptional = postRepository.findById(postId);
 
         if (postOptional.isPresent()) {
             Post post = postOptional.get();
@@ -99,12 +135,16 @@ public class PostController {
         } else return "postNotFound";
 
     }
+    @GetMapping("/error")
+    public String error(){
+        return "error";
+    }
 
 
     @PostMapping("/update-post/{postId}")
     public String updatePost(ModelMap model, @PathVariable long postId, @RequestParam String title, @RequestParam String description) {
         User user = getCurrentUser();
-        Optional<Post> postOptional = postRepository.findById((int) postId);
+        Optional<Post> postOptional = postRepository.findById(postId);
         if(postOptional.isPresent()){
         Post post = postOptional.get();
         post.setUser(user); // Set the user for the post
@@ -119,7 +159,7 @@ public class PostController {
 
     @PostMapping("/add-comment/{postId}")
     public String addPost(ModelMap model, @PathVariable long postId, @RequestParam String content) {
-        Optional<Post> postOptional = postRepository.findById((int) postId);
+        Optional<Post> postOptional = postRepository.findById(postId);
         if (postOptional != null) {
             Post post = postOptional.get();
             Comment comment = new Comment();
@@ -143,11 +183,13 @@ public class PostController {
             if (comment.getUser().getId() == getCurrentUser().getId()) {
                 commentRepository.delete(comment);
                 return "redirect:/show-post/" + postId;
-            }
+            } else if (roleRepository.findByName("ROLE_MODERATOR").getUsers().contains(getCurrentUser()) || roleRepository.findByName("ROLE_ADMIN").getUsers().contains(getCurrentUser())) {
+                commentRepository.delete(comment);
+                return "redirect:/show-post/" + postId;
+            } else return "postNotFound";
 
-        } else return "postNotFound";
-        return "postNotFound";
+
+        }
+        return "error";
     }
-
-
 }

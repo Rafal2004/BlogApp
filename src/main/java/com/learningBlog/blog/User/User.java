@@ -1,18 +1,16 @@
 package com.learningBlog.blog.User;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.learningBlog.blog.Post.Comment;
 import com.learningBlog.blog.Post.Post;
 import jakarta.persistence.*;
-import org.hibernate.annotations.Type;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Entity(name = "Users")
+@Entity
+@Table(name="user")
 public class User {
 
     public User() {
@@ -21,27 +19,33 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name="id")
+    private long id;
+    @Column(name="name")
     private String name;
+    @Column(name="lastname")
     private String lastname;
+    @Column(name="email")
     private String email;
+    @Column(name="password")
     private String password;
-    @ManyToMany
-
-    @JoinTable(name = "user_liked_posts",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "post_id"))
-    private Set<Post> likedPosts = new HashSet<>();
-
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(name = "user_saved_posts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "post_id"))
+    private Set<Post> savedPosts = new HashSet<>();
+
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade ={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.DETACH, CascadeType.REFRESH})
     @JoinTable(
             name = "users_roles",
             joinColumns = {@JoinColumn(name = "USER_ID", referencedColumnName = "ID")},
             inverseJoinColumns = {@JoinColumn(name = "ROLE_ID", referencedColumnName = "ID")})
     private List<Role> roles = new ArrayList<>();
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> comments = new ArrayList<>();
 
@@ -52,13 +56,28 @@ public class User {
         this.lastname = lastname;
 
     }
+    public void addRole(Role role){
+        roles.add(role);
 
-    public Set<Post> getLikedPosts() {
-        return likedPosts;
     }
 
-    public void setLikedPosts(Set<Post> likedPosts) {
-        this.likedPosts = likedPosts;
+    public void removeRole(Role role){
+        roles.remove(role);
+
+    }
+    public void addSavedPost(Post post){
+        savedPosts.add(post);
+    }
+
+    public void removeSavedPost(Post post){
+        savedPosts.remove(post);
+    }
+    public Set<Post> getSavedPosts() {
+        return savedPosts;
+    }
+
+    public void setSavedPosts(Set<Post> savedPosts) {
+        this.savedPosts = savedPosts;
     }
 
     public List<Role> getRoles() {
@@ -117,7 +136,6 @@ public class User {
         this.lastname = lastname;
     }
 
-
     @Override
     public String toString() {
         return "User{" +
@@ -125,10 +143,21 @@ public class User {
                 ", name='" + name + '\'' +
                 ", lastname='" + lastname + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", roles=" + roles +
-                ", posts=" + posts +
-                ", comments=" + comments +
                 '}';
     }
+//    @Override
+//    public String toString() {
+//        return "User{" +
+//                "id=" + id +
+//                ", name='" + name + '\'' +
+//                ", lastname='" + lastname + '\'' +
+//                ", email='" + email + '\'' +
+//                ", password='" + password + '\'' +
+//                ", likedPosts=" + likedPosts +
+//                ", roles=" + roles +
+//                ", posts=" + posts +
+//                ", comments=" + comments +
+//                '}';
+//    }
 }
+

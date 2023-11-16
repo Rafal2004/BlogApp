@@ -39,11 +39,6 @@ public class SecurityConfiguration {
     }
 
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers(new AntPathRequestMatcher("/h2-console/**"));
-    }
-
 
 
     @Bean
@@ -54,16 +49,18 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests((authorize) ->
                         authorize.requestMatchers(mvcMatcherBuilder.pattern("/")).permitAll()
                                 .requestMatchers(mvcMatcherBuilder.pattern("/register")).permitAll()
+                                .requestMatchers(mvcMatcherBuilder.pattern("/error")).permitAll()
                                 .requestMatchers(mvcMatcherBuilder.pattern("/register/save")).permitAll()
-                                .requestMatchers(mvcMatcherBuilder.pattern("/users")).permitAll()
+                                .requestMatchers(mvcMatcherBuilder.pattern("/user/all")).hasAnyRole("MODERATOR", "ADMIN")
                                 .requestMatchers(mvcMatcherBuilder.pattern("/add-post")).hasRole("ADMIN")
-                                .requestMatchers(mvcMatcherBuilder.pattern("/show-post/**")).permitAll()
-                                .requestMatchers(mvcMatcherBuilder.pattern("/delete-post/**")).permitAll()
+                                .requestMatchers(mvcMatcherBuilder.pattern("/show-post/**")).hasAnyRole("USER","MODERATOR", "ADMIN")
+                                .requestMatchers(mvcMatcherBuilder.pattern("/delete-post/**")).hasAnyRole("MODERATOR", "ADMIN")
                                 .requestMatchers(mvcMatcherBuilder.pattern("/update-post/**")).permitAll()
                                 .requestMatchers(mvcMatcherBuilder.pattern("/add-comment/**")).permitAll()
-                                .requestMatchers(mvcMatcherBuilder.pattern("/delete-comment/**")).permitAll()
-                                .requestMatchers(mvcMatcherBuilder.pattern("/user/**")).hasRole("USER")
-
+                                .requestMatchers(mvcMatcherBuilder.pattern("/delete-comment/**")).hasAnyRole("USER","MODERATOR", "ADMIN")
+                                .requestMatchers(mvcMatcherBuilder.pattern("/user/**")).hasAnyRole("USER","MODERATOR", "ADMIN")
+                             .requestMatchers(mvcMatcherBuilder.pattern("/save-post")).hasAnyRole("USER","MODERATOR", "ADMIN")
+                                .requestMatchers(mvcMatcherBuilder.pattern("/delete-saved-post")).hasAnyRole("USER","MODERATOR", "ADMIN")
                 ).formLogin(
                         form -> form
                                 .loginPage("/login")

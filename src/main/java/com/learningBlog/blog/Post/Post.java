@@ -9,16 +9,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name="post")
 public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="id")
     private long id;
+    @Column(name="title")
     private String title;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+    @Column(name="description")
     private String description;
+    @Column(name = "localDateTime")
     private LocalDateTime localDateTime;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -81,5 +87,13 @@ public class Post {
         comment.setPost(null);
     }
 
-
+    @Override
+    public String toString() {
+        return "Post{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", localDateTime=" + localDateTime +
+                '}';
+    }
 }
