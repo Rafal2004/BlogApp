@@ -1,34 +1,14 @@
 package com.learningBlog.blog;
 
-        import jakarta.servlet.http.HttpServletRequest;
-        import jakarta.servlet.http.HttpServletResponse;
-        import org.springframework.beans.factory.annotation.Autowired;
         import org.springframework.context.annotation.Bean;
         import org.springframework.context.annotation.Configuration;
-        import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
         import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-        import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-        import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
-        import org.springframework.security.core.session.SessionRegistry;
-        import org.springframework.security.core.session.SessionRegistryImpl;
         import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
         import org.springframework.security.crypto.password.PasswordEncoder;
         import org.springframework.security.web.SecurityFilterChain;
-        import org.springframework.security.web.header.HeaderWriter;
-        import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
-        import org.springframework.security.web.header.writers.StaticHeadersWriter;
-        import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
         import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
         import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-        import org.springframework.security.web.util.matcher.RequestMatcher;
         import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
-
-
-        import java.util.Arrays;
-        import java.util.List;
-
-        import static org.springframework.boot.autoconfigure.security.servlet.PathRequest.toH2Console;
-        import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class SecurityConfiguration {

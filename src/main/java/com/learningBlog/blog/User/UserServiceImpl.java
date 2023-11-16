@@ -24,32 +24,6 @@ public class UserServiceImpl implements UserService {
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
-//    @Override
-//    public void saveUser(User tempUser) {
-//        User user = new User();
-//        user.setName(userDto.getFirstName());
-//        user.setLastname(userDto.getLastName());
-//        user.setEmail(userDto.getEmail());
-//        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-//
-//
-//        Role role = roleRepository.findByName("ROLE_USER");
-//        if(role ==null)
-//
-//        {
-//            role = checkRoleExist();
-//        }
-//        user.setRoles(Arrays.asList(role));
-//        userRepository.save(user);
-//    }
-//
-//
-//
-//    private Role checkRoleExist(){
-//        Role role = new Role();
-//        role.setName("ROLE_USER");
-//        return roleRepository.save(role);
-//    }
 
     @Override
     public User hashPasswordAndSetRole(User tempUser) {
